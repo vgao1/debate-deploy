@@ -1,0 +1,10 @@
+{
+  "debate1": {
+    "category": "School",
+    "prompt": "Schools should give free lunches."
+  },
+  "debate2": {
+    "category": "Restriction",
+    "prompt": "One should be able to participate in debates on this app without logging in."
+  }
+}
