@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 
 import { Router, getExpressRouter } from "./framework/router";
 
-import { Friend, Post, User, WebSession } from "./app";
+import { Friend, Post, User, WebSession, Phase } from "./app";
 import { PostDoc, PostOptions } from "./concepts/post";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
@@ -135,6 +135,34 @@ class Routes {
     const user = WebSession.getUser(session);
     const fromId = (await User.getUserByUsername(from))._id;
     return await Friend.rejectRequest(fromId, user);
+  }
+
+  ////////////////////////// PHASES //////////////////////////
+
+  @Router.get("/phase/active")
+  async getActivePhases() {
+    return await Responses.phases(await Phase.getActive());
+  }
+
+  @Router.get("/phase/:key")
+  async getPhaseByKey(key: ObjectId) {
+    return await Responses.phase(await Phase.getPhaseByKey(new ObjectId(key)));
+  }
+
+  @Router.post("/phase")
+  async addActivePhase(key: ObjectId, deadline: Date) {
+    const response = await Phase.initialize(new ObjectId(key), deadline);
+    return { msg: response.msg, phase: await Responses.phase(response.phase) };
+  }
+
+  @Router.delete("/phase/active/:key")
+  async deleteActive(key: ObjectId) {
+    return await Phase.deleteActive(new ObjectId(key));
+  }
+
+  @Router.delete("/phase/expired/:key")
+  async deleteExpired(key: ObjectId) {
+    return await Phase.deleteExpired(new ObjectId(key));
   }
 }
 
