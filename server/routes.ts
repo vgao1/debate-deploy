@@ -151,7 +151,7 @@ class Routes {
 
   @Router.post("/phase")
   async addActivePhase(key: ObjectId, deadline: Date) {
-    const response = await Phase.initialize(new ObjectId(key), deadline);
+    const response = await Phase.initialize(new ObjectId(key), new Date(deadline));
     return { msg: response.msg, phase: await Responses.phase(response.phase) };
   }
 

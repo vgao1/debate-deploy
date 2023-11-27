@@ -9,7 +9,7 @@ const operations = [
     name: "Login",
     endpoint: "/api/login",
     method: "POST",
-    fields: { username: "input", password: "input" },
+    fields: { username: ["input", "text"], password: ["input", "password"] },
   },
   {
     name: "Logout",
@@ -21,13 +21,43 @@ const operations = [
     name: "Signup",
     endpoint: "/api/users",
     method: "POST",
-    fields: { username: "input", password: "input" },
+    fields: { username: ["input", "text"], password: ["input", "password"] },
   },
   {
     name: "Session",
     endpoint: "/api/session",
     method: "GET",
     fields: {},
+  },
+  {
+    name: "Phase Add",
+    endpoint: "/api/phase",
+    method: "POST",
+    fields: { key: ["input", "text"], deadline: ["input", "datetime-local"] },
+  },
+  {
+    name: "Get Phase by item's ID",
+    endpoint: "/api/phase/:key",
+    method: "GET",
+    fields: { key: ["input", "text"] },
+  },
+  {
+    name: "Get all active Phases",
+    endpoint: "/api/phase/active",
+    method: "GET",
+    fields: {},
+  },
+  {
+    name: "Delete an active Phase by item ID",
+    endpoint: "/api/phase/active/:key",
+    method: "DELETE",
+    fields: { key: ["input", "text"] },
+  },
+  {
+    name: "Delete expired Phases by item ID",
+    endpoint: "/api/phase/expired/:key",
+    method: "DELETE",
+    fields: { key: ["input", "text"] },
   },
 ];
 
@@ -71,7 +101,6 @@ async function submitEventHandler(e: Event) {
 
   const response = await fetch(endpoint, fetchOptions);
   const result = await response.json();
-  console.log(result, response);
   statusCode.value = response.status.toString() + " (" + response.statusText + ")";
   responseText.value = JSON.stringify(result, null, 2);
 }
@@ -96,8 +125,8 @@ async function submitEventHandler(e: Event) {
               <input type="hidden" name="$endpoint" :value="op.endpoint" />
               <input type="hidden" name="$method" :value="op.method" />
               <div v-for="[field, tag] of Object.entries(op.fields)" :key="field" class="field" style="margin-left: 20px; margin-top: 10px">
-                <label :for="field + 'field'">{{ field }}</label>
-                <input v-if="tag === 'input'" :name="field" :id="field + 'field'" />
+                <label :for="field + 'field'" style="margin-right: 8px">{{ field }}</label>
+                <input v-if="tag[0] === 'input'" :type="tag[1]" :name="field" :id="field + 'field'" />
                 <textarea v-else :name="field" :id="field + 'field'"></textarea>
               </div>
               <button type="submit" style="background-color: blue; margin-top: 10px; padding: 4px; margin-bottom: 10px">Submit</button>
