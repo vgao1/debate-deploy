@@ -1,69 +1,112 @@
 <script setup lang="ts">
-import PostListComponent from "@/components/Post/PostListComponent.vue";
-import { useUserStore } from "@/stores/user";
-import { fetchy } from "@/utils/fetchy";
-import { storeToRefs } from "pinia";
+import { ref } from "vue";
 
-type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+const statusCode = ref("");
+const responseText = ref("");
 
-const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
 const operations = [
   {
     name: "Login",
     endpoint: "/api/login",
     method: "POST",
-    fields: { username: "input" },
+    fields: { username: "input", password: "input" },
   },
   {
     name: "Logout",
     endpoint: "/api/logout",
     method: "POST",
     fields: {},
+  },
+  {
+    name: "Signup",
+    endpoint: "/api/users",
+    method: "POST",
+    fields: { username: "input", password: "input" },
+  },
+  {
+    name: "Session",
+    endpoint: "/api/session",
+    method: "GET",
+    fields: {},
+  },
+];
+
+async function submitEventHandler(e: Event) {
+  const form = e.target as HTMLFormElement;
+  const formEntries = new FormData(form);
+  const reqData: Record<string, any> = {};
+  formEntries.forEach((val, key) => {
+    if (key !== "$endpoint" && key !== "$method") {
+      reqData[key as string] = val;
+    }
+  });
+
+  // Replace :param with the actual value.
+  let endpoint = (formEntries.get("$endpoint") as string).replace(/:(\w+)/g, (_, key) => {
+    const param = reqData[key] as string;
+    delete reqData[key];
+    return param;
+  });
+
+  const method = formEntries.get("$method") as string;
+  const fetchOptions: RequestInit = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      credentials: "same-origin",
+    },
+  };
+
+  statusCode.value = "";
+  responseText.value = "Loading...";
+
+  if (reqData) {
+    if (method === "GET" || method === "DELETE") {
+      const queryString = new URLSearchParams(reqData).toString();
+      endpoint = `${endpoint}?${queryString}`;
+    } else {
+      fetchOptions.body = JSON.stringify(reqData);
+    }
   }
-]
-const send_req = async (operation) => {
-  if (operation.method === 'PATCH' || operation.method === 'POST') {
-    fetchy(operation.endpoint, operation.method, operation.fields)
-  } else {
-    fetchy(operation.endpoint, operation.method, operation.fields)
-  }
+
+  const response = await fetch(endpoint, fetchOptions);
+  const result = await response.json();
+  console.log(result, response);
+  statusCode.value = response.status.toString() + " (" + response.statusText + ")";
+  responseText.value = JSON.stringify(result, null, 2);
 }
 </script>
 
 <template>
   <main>
     <h1>Backend Tester</h1>
-    <section>
-      <h1 v-if="isLoggedIn">Welcome {{ currentUsername }}!</h1>
-      <h1 v-else>Please login!</h1>
-    </section>
-    <section id="operations">
-      <h2>API Operations</h2>
-      <ul v-if="isLoggedIn">
-        <li v-for="operation of operations">
-          <h3> {{operation.name}} </h3>
-          <form class="operation-form">
-            <input type="hidden" name="$endpoint" value="{{operation.endpoint}}" />
-            <input type="hidden" name="$method" value="{{operation.method}}" />
-            {{Object.entries(operation.fields)
-              .map(([name, type]) => {
-                const tag = type === "json" ? "textarea" : type;
-                return `<div class="field">
-                  <label for="${name}">${name}</label>
-                  <{tag} name="${name}" id="${name}"></$tag}>
-                </div>`;
-              }
-            }}).join("")}
-            <button type="submit">Submit</button>
-          </form>
-        </li>
-      </ul>
-    </section>
-
-    <section id="response">
-      <h2>Response <span id="status-code"></span></h2>
-      <pre id="response-text"></pre>
-    </section>
+    <div style="overflow: hidden">
+      <section id="response" style="overflow: scroll; height: 25vh">
+        <h2>
+          Response <span id="status-code">{{ statusCode }}</span>
+        </h2>
+        <pre id="response-text"> {{ responseText }}</pre>
+      </section>
+      <section id="operations" style="overflow: scroll; height: 55vh">
+        <h2>API Operations</h2>
+        <ul>
+          <li v-for="op of operations" :key="op.name" style="margin-bottom: 10px; margin-top: 10px">
+            <h3>{{ op.name }}:</h3>
+            <form class="operation-form" @submit.prevent="submitEventHandler">
+              <input type="hidden" name="$endpoint" :value="op.endpoint" />
+              <input type="hidden" name="$method" :value="op.method" />
+              <div v-for="[field, tag] of Object.entries(op.fields)" :key="field" class="field" style="margin-left: 20px; margin-top: 10px">
+                <label :for="field + 'field'">{{ field }}</label>
+                <input v-if="tag === 'input'" :name="field" :id="field + 'field'" />
+                <textarea v-else :name="field" :id="field + 'field'"></textarea>
+              </div>
+              <button type="submit" style="background-color: blue; margin-top: 10px; padding: 4px; margin-bottom: 10px">Submit</button>
+            </form>
+            <hr />
+          </li>
+        </ul>
+      </section>
+    </div>
   </main>
 </template>
 
