@@ -4,6 +4,7 @@ import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
+import NavBottomBar from "./components/Nav/NavBottomBar.vue";
 
 const currentRoute = useRoute();
 const currentRouteName = computed(() => currentRoute.name);
@@ -22,7 +23,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <header>
+  <!-- <header>
     <nav>
       <div class="title">
         <img src="@/assets/images/logo.svg" />
@@ -45,8 +46,13 @@ onBeforeMount(async () => {
     <article v-if="toast !== null" class="toast" :class="toast.style">
       <p>{{ toast.message }}</p>
     </article>
-  </header>
-  <RouterView />
+  </header> -->
+
+  <!-- TODO: can't specify max width in the div instead of each child? -->
+  <div class="">
+    <RouterView class="max-w-sm mx-auto"/>
+    <NavBottomBar class="max-w-sm mx-auto"/>
+  </div>
 </template>
 
 <style scoped>

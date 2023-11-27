@@ -6,6 +6,8 @@ import HomeView from "../views/HomeView.vue";
 import LoginView from "../views/LoginView.vue";
 import NotFoundView from "../views/NotFoundView.vue";
 import SettingView from "../views/SettingView.vue";
+import DebateView from "../views/DebateView.vue";
+import TestingView from "../views/TestingView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -14,6 +16,16 @@ const router = createRouter({
       path: "/",
       name: "Home",
       component: HomeView,
+    },
+    {
+      path: "/testing",
+      name: "Testing",
+      component: TestingView,
+    },
+    {
+      path: "/debates/:id",
+      name: "Debate",
+      component: DebateView,
     },
     {
       path: "/setting",

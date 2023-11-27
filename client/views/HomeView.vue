@@ -1,24 +1,29 @@
 <script setup lang="ts">
-import PostListComponent from "@/components/Post/PostListComponent.vue";
+import DebatePrompt from "@/components/Home/DebatePrompt.vue";
+import TextContainer from "@/components/TextContainer.vue";
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
 
 const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
+// TODO(Nathan): retrieve debate from db
+import debatesData from '@/assets/debates.json';
+
+const debateIds = Object.keys(debatesData)
 </script>
 
 <template>
-  <main>
-    <h1>Home Page</h1>
-    <section>
-      <h1 v-if="isLoggedIn">Welcome {{ currentUsername }}!</h1>
-      <h1 v-else>Please login!</h1>
-    </section>
-    <PostListComponent />
-  </main>
+  <div class="py-4">
+
+    <TextContainer>
+      <p class="text-base font-bold">Today's debates</p>
+    </TextContainer>
+    
+    <div v-for="id in debateIds" class="flex flex-col">
+      <TextContainer>
+        <DebatePrompt :id="id"/>
+      </TextContainer>
+    </div>    
+
+</div>
 </template>
 
-<style scoped>
-h1 {
-  text-align: center;
-}
-</style>
