@@ -20,6 +20,7 @@ export default class PhaseConcept {
    */
   async initialize(key: ObjectId, deadline: Date) {
     await this.alreadyExists(key);
+    await this.alreadyExpired(deadline);
     const _id = await this.active.createOne({ key, deadline });
     return { msg: "Active phase successfully created!", phase: await this.active.readOne({ _id }) };
   }
@@ -73,6 +74,18 @@ export default class PhaseConcept {
     for (const phase of expired) {
       await this.expired.createOne({ key: phase.key, deadline: phase.deadline });
       await this.active.deleteOne({ _id: phase._id });
+    }
+  }
+
+  /**
+   * Checks if the given date is already expired
+   * @param date date we're checking
+   * @throws NotAllowedError if the date has already past
+   */
+  private alreadyExpired(date: Date) {
+    const now = new Date();
+    if (date < now) {
+      throw new NotAllowedError("The date given (" + date.toString() + ") is already expired!");
     }
   }
 
