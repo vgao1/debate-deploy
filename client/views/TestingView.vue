@@ -24,28 +24,46 @@ const operations = [
     fields: { username: ["input", "text"], password: ["input", "password"] },
   },
   {
-    name: "Session",
+    name: "Find a user by username (leave empty for all)",
+    endpoint: "/api/users/:username",
+    method: "GET",
+    fields: { username: ["input", "text"] },
+  },
+  {
+    name: "Get current logged in user (Session)",
     endpoint: "/api/session",
     method: "GET",
+    fields: {},
+  },
+  {
+    name: "Update user",
+    endpoint: "/api/users",
+    method: "PATCH",
+    fields: { update: { username: ["input", "text"], password: ["input", "password"] } },
+  },
+  {
+    name: "Delete logged in user",
+    endpoint: "/api/users",
+    method: "DELETE",
     fields: {},
   },
   {
     name: "Phase Add",
     endpoint: "/api/phase",
     method: "POST",
-    fields: { key: ["input", "text"], deadline: ["input", "datetime-local"] },
-  },
-  {
-    name: "Get Phase by item's ID",
-    endpoint: "/api/phase/:key",
-    method: "GET",
     fields: { key: ["input", "text"] },
   },
   {
-    name: "Get all active Phases",
-    endpoint: "/api/phase/active",
+    name: "Update Phase",
+    endpoint: "/api/phase",
+    method: "PATCH",
+    fields: { key: ["input", "text"], newDeadline: ["input", "datetime-local"] },
+  },
+  {
+    name: "Get Phase by item's ID (leave empty for all active phases)",
+    endpoint: "/api/phase/:key",
     method: "GET",
-    fields: {},
+    fields: { key: ["input", "text"] },
   },
   {
     name: "Delete an active Phase by item ID",
@@ -58,6 +76,18 @@ const operations = [
     endpoint: "/api/phase/expired/:key",
     method: "DELETE",
     fields: { key: ["input", "text"] },
+  },
+  {
+    name: "Change max phase",
+    endpoint: "/api/phase/maxPhase",
+    method: "PATCH",
+    fields: { maxMax: ["input", "number"] },
+  },
+  {
+    name: "Change the hour extension",
+    endpoint: "/api/phase/extension",
+    method: "PATCH",
+    fields: { newVal: ["input", "number"] },
   },
 ];
 

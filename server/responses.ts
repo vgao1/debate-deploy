@@ -1,8 +1,9 @@
 import { User } from "./app";
-import { AlreadyFriendsError, FriendNotFoundError, FriendRequestAlreadyExistsError, FriendRequestDoc, FriendRequestNotFoundError } from "./concepts/friend";
-import { PostAuthorNotMatchError, PostDoc } from "./concepts/post";
 import { KeyExistsError, NoPhaseError, PhaseDoc } from "./concepts/phase";
+import { PostAuthorNotMatchError, PostDoc } from "./concepts/post";
 import { Router } from "./framework/router";
+
+const PHASES = ["Start", "Review", "Completed"];
 
 /**
  * This class does useful conversions for the frontend.
@@ -31,7 +32,8 @@ export default class Responses {
 
   /**
    * Convert PhaseDoc into more readable format for the frontend by
-   * converting the key id into a debate prompt.
+   * converting the key id into a debate prompt and the curPhase into
+   * a string format.
    */
   static async phase(phase: PhaseDoc | null) {
     if (!phase) {
@@ -39,7 +41,8 @@ export default class Responses {
     }
     // const debate = await Debate.getDebateById(phase.key);
     const debate = { prompt: "temp DELETE ME" };
-    return { ...phase, key: debate.prompt };
+    const curPhase = PHASES[phase.curPhase - 1];
+    return { ...phase, key: debate.prompt, curPhase };
   }
 
   /**
@@ -48,44 +51,13 @@ export default class Responses {
   static async phases(phases: PhaseDoc[]) {
     // const debates = await Promise.all(phases.map(async (phase) => await Debate.getDebateById(phase.key)));
     const debates = [{ prompt: "temp DELETE ME" }];
-    return phases.map((phase, i) => ({ ...phase, key: debates[i].prompt }));
-  }
-
-  /**
-   * Convert FriendRequestDoc into more readable format for the frontend
-   * by converting the ids into usernames.
-   */
-  static async friendRequests(requests: FriendRequestDoc[]) {
-    const from = requests.map((request) => request.from);
-    const to = requests.map((request) => request.to);
-    const usernames = await User.idsToUsernames(from.concat(to));
-    return requests.map((request, i) => ({ ...request, from: usernames[i], to: usernames[i + requests.length] }));
+    return phases.map((phase, i) => ({ ...phase, key: debates[i].prompt, curPhases: PHASES[phase.curPhase - 1] }));
   }
 }
 
 Router.registerError(PostAuthorNotMatchError, async (e) => {
   const username = (await User.getUserById(e.author)).username;
   return e.formatWith(username, e._id);
-});
-
-Router.registerError(FriendRequestAlreadyExistsError, async (e) => {
-  const [user1, user2] = await Promise.all([User.getUserById(e.from), User.getUserById(e.to)]);
-  return e.formatWith(user1.username, user2.username);
-});
-
-Router.registerError(FriendNotFoundError, async (e) => {
-  const [user1, user2] = await Promise.all([User.getUserById(e.user1), User.getUserById(e.user2)]);
-  return e.formatWith(user1.username, user2.username);
-});
-
-Router.registerError(FriendRequestNotFoundError, async (e) => {
-  const [user1, user2] = await Promise.all([User.getUserById(e.from), User.getUserById(e.to)]);
-  return e.formatWith(user1.username, user2.username);
-});
-
-Router.registerError(AlreadyFriendsError, async (e) => {
-  const [user1, user2] = await Promise.all([User.getUserById(e.user1), User.getUserById(e.user2)]);
-  return e.formatWith(user1.username, user2.username);
 });
 
 Router.registerError(KeyExistsError, async (e) => {

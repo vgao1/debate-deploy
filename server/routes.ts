@@ -2,18 +2,35 @@ import { ObjectId } from "mongodb";
 
 import { Router, getExpressRouter } from "./framework/router";
 
-import { Friend, Phase, Post, User, WebSession } from "./app";
+import { Phase, Post, User, WebSession } from "./app";
 import { PostDoc, PostOptions } from "./concepts/post";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
 import Responses from "./responses";
 
 class Routes {
+  ////////////////////////// SESSION //////////////////////////
+
   @Router.get("/session")
   async getSessionUser(session: WebSessionDoc) {
     const user = WebSession.getUser(session);
     return await User.getUserById(user);
   }
+
+  @Router.post("/login")
+  async logIn(session: WebSessionDoc, username: string, password: string) {
+    const u = await User.authenticate(username, password);
+    WebSession.start(session, u._id);
+    return { msg: "Logged in!" };
+  }
+
+  @Router.post("/logout")
+  async logOut(session: WebSessionDoc) {
+    WebSession.end(session);
+    return { msg: "Logged out!" };
+  }
+
+  ////////////////////////// USER //////////////////////////
 
   @Router.get("/users")
   async getUsers() {
@@ -44,18 +61,7 @@ class Routes {
     return await User.delete(user);
   }
 
-  @Router.post("/login")
-  async logIn(session: WebSessionDoc, username: string, password: string) {
-    const u = await User.authenticate(username, password);
-    WebSession.start(session, u._id);
-    return { msg: "Logged in!" };
-  }
-
-  @Router.post("/logout")
-  async logOut(session: WebSessionDoc) {
-    WebSession.end(session);
-    return { msg: "Logged out!" };
-  }
+  ////////////////////////// DEBATE //////////////////////////
 
   @Router.get("/posts")
   async getPosts(author?: string) {
@@ -90,56 +96,9 @@ class Routes {
     return Post.delete(_id);
   }
 
-  @Router.get("/friends")
-  async getFriends(session: WebSessionDoc) {
-    const user = WebSession.getUser(session);
-    return await User.idsToUsernames(await Friend.getFriends(user));
-  }
-
-  @Router.delete("/friends/:friend")
-  async removeFriend(session: WebSessionDoc, friend: string) {
-    const user = WebSession.getUser(session);
-    const friendId = (await User.getUserByUsername(friend))._id;
-    return await Friend.removeFriend(user, friendId);
-  }
-
-  @Router.get("/friend/requests")
-  async getRequests(session: WebSessionDoc) {
-    const user = WebSession.getUser(session);
-    return await Responses.friendRequests(await Friend.getRequests(user));
-  }
-
-  @Router.post("/friend/requests/:to")
-  async sendFriendRequest(session: WebSessionDoc, to: string) {
-    const user = WebSession.getUser(session);
-    const toId = (await User.getUserByUsername(to))._id;
-    return await Friend.sendRequest(user, toId);
-  }
-
-  @Router.delete("/friend/requests/:to")
-  async removeFriendRequest(session: WebSessionDoc, to: string) {
-    const user = WebSession.getUser(session);
-    const toId = (await User.getUserByUsername(to))._id;
-    return await Friend.removeRequest(user, toId);
-  }
-
-  @Router.put("/friend/accept/:from")
-  async acceptFriendRequest(session: WebSessionDoc, from: string) {
-    const user = WebSession.getUser(session);
-    const fromId = (await User.getUserByUsername(from))._id;
-    return await Friend.acceptRequest(fromId, user);
-  }
-
-  @Router.put("/friend/reject/:from")
-  async rejectFriendRequest(session: WebSessionDoc, from: string) {
-    const user = WebSession.getUser(session);
-    const fromId = (await User.getUserByUsername(from))._id;
-    return await Friend.rejectRequest(fromId, user);
-  }
-
   ////////////////////////// PHASES //////////////////////////
 
-  @Router.get("/phase/active")
+  @Router.get("/phase")
   async getActivePhases() {
     return await Responses.phases(await Phase.getActive());
   }
@@ -150,9 +109,24 @@ class Routes {
   }
 
   @Router.post("/phase")
-  async addActivePhase(key: ObjectId, deadline: Date) {
-    const response = await Phase.initialize(new ObjectId(key), new Date(deadline));
-    return { msg: response.msg, phase: await Responses.phase(response.phase) };
+  async addStoredPhase(key: ObjectId) {
+    // TO-DO Synchronize with debate creation
+    return await Phase.initialize(new ObjectId(key));
+  }
+
+  @Router.patch("/phase")
+  async editPhaseDeadline(key: ObjectId, newDeadline: Date) {
+    return await Phase.editDeadline(new ObjectId(key), new Date(newDeadline));
+  }
+
+  @Router.patch("/phase/extension")
+  changeDeadlineExtension(newVal: number) {
+    return Phase.changeDeadlineExtension(newVal);
+  }
+
+  @Router.post("/phase/maxPhase")
+  changeMaxPhase(newMax: number) {
+    return Phase.changeMaxPhase(newMax);
   }
 
   @Router.delete("/phase/active/:key")
