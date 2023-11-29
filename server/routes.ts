@@ -101,30 +101,35 @@ class Routes {
   @Router.get("/activeDebates")
   async getActiveDebates() {
     const completed = await Phase.expireOld();
+    await Debate.deleteMatchesForDebate(completed);
     return await Responses.phases(await Phase.getActive());
   }
 
   @Router.get("/activeDebates/:debateID")
   async getActiveDebateById(debateID: ObjectId) {
     const completed = await Phase.expireOld();
+    await Debate.deleteMatchesForDebate(completed);
     return await Responses.phase(await Phase.getPhaseByKey(new ObjectId(debateID)));
   }
 
   @Router.get("/historyDebates")
   async getExpiredDebates() {
     const completed = await Phase.expireOld();
+    await Debate.deleteMatchesForDebate(completed);
     return await Responses.phases(await Phase.getHistory());
   }
 
   @Router.get("/historyDebates/:debateID")
   async getExpiredDebateById(debateID: ObjectId) {
     const completed = await Phase.expireOld();
+    await Debate.deleteMatchesForDebate(completed);
     return await Responses.phase(await Phase.getExpiredByKey(new ObjectId(debateID)));
   }
 
   @Router.patch("/activeDebates/deadline")
   async editActiveDebateDeadline(debateID: ObjectId, newDeadline: Date) {
     const completed = await Phase.expireOld();
+    await Debate.deleteMatchesForDebate(completed);
     return await Phase.editDeadline(new ObjectId(debateID), new Date(newDeadline));
   }
 
@@ -148,6 +153,7 @@ class Routes {
   @Router.post("/debate/newPrompt")
   async suggestPrompt(prompt: string, category: string) {
     const completed = await Phase.expireOld();
+    await Debate.deleteMatchesForDebate(completed);
     const response = await Debate.suggestPrompt(prompt, category);
     await Phase.initialize(response._id);
     return { msg: response.msg };
@@ -157,6 +163,7 @@ class Routes {
   async submitOpinion(session: WebSessionDoc, debate: ObjectId, content: string, likertScale: string) {
     const user = WebSession.getUser(session);
     const completed = await Phase.expireOld();
+    await Debate.deleteMatchesForDebate(completed);
     await Phase.getPhaseByKey(new ObjectId(debate)); // checks if debate is active
     return await Debate.addOpinion(debate, user.toString(), content, likertScale);
   }
@@ -164,6 +171,7 @@ class Routes {
   @Router.get("/activeDebates/matchOpinions")
   async matchParticipantToDifferentOpinions(debate: ObjectId) {
     const completed = await Phase.expireOld();
+    await Debate.deleteMatchesForDebate(completed);
     await Phase.getPhaseByKey(new ObjectId(debate)); // checks if debate is active
     return await Debate.matchParticipantToDifferentOpinions(debate);
   }
@@ -172,12 +180,14 @@ class Routes {
   async removeMatchedOpinion(session: WebSessionDoc, debate: ObjectId, opinionId: string) {
     const user = WebSession.getUser(session);
     const completed = await Phase.expireOld();
+    await Debate.deleteMatchesForDebate(completed);
     return await Debate.removeDifferentOpinion(debate, user.toString(), opinionId);
   }
 
   @Router.delete("/debate")
   async deleteDebate(debateID: ObjectId) {
     const completed = await Phase.expireOld();
+    await Debate.deleteMatchesForDebate(completed);
     await Phase.delete(new ObjectId(debateID));
     return await Debate.delete(new ObjectId(debateID));
   }

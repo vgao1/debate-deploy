@@ -149,6 +149,13 @@ export default class DebateConcept {
     return { msg: "Successfully removed opinion that was matched to you!" };
   }
 
+  async deleteMatchesForDebate(debateIDs: ObjectId[]) {
+    for (const debate of debateIDs) {
+      await this.differentOpinionMatches.deleteMany({ debate });
+    }
+    return { msg: "Successfully removed all opinion matches for the given debates!" };
+  }
+
   /**
    * Figures out if the prompt has already been used in an existing debate object
    * @param prompt a statement that the debate's participants write opinions about

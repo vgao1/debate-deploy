@@ -1,9 +1,9 @@
 import { Debate, User } from "./app";
-import { KeyExistsError, NoPhaseError, PhaseDoc } from "./concepts/phase";
+import { ActivePhaseDoc, BasePhaseDoc, KeyExistsError, NoPhaseError } from "./concepts/phase";
 import { PostAuthorNotMatchError, PostDoc } from "./concepts/post";
 import { Router } from "./framework/router";
 
-const PHASES = ["Start", "Review", "Completed"];
+const PHASES = ["Proposed", "Start", "Review", "Recently Completed", "Archived"];
 
 /**
  * This class does useful conversions for the frontend.
@@ -34,21 +34,21 @@ export default class Responses {
    * converting the key id into a debate prompt and the curPhase into
    * a string format.
    */
-  static async phase(phase: PhaseDoc | null) {
+  static async phase(phase: ActivePhaseDoc | BasePhaseDoc | null) {
     if (!phase) {
       return phase;
     }
     const debate = await Debate.getDebateById(phase.key);
-    const curPhase = PHASES[phase.curPhase - 1];
+    const curPhase = PHASES[phase.curPhase];
     return { ...phase, key: debate.prompt, curPhase };
   }
 
   /**
    * Same as {@link phase} but for an array of PhaseDoc for improved performance.
    */
-  static async phases(phases: PhaseDoc[]) {
+  static async phases(phases: ActivePhaseDoc[] | BasePhaseDoc[]) {
     const debates = await Promise.all(phases.map(async (phase) => await Debate.getDebateById(phase.key)));
-    return phases.map((phase, i) => ({ ...phase, key: debates[i].prompt, curPhase: PHASES[phase.curPhase - 1] }));
+    return phases.map((phase, i) => ({ ...phase, key: debates[i].prompt, curPhase: PHASES[phase.curPhase] }));
   }
 }
 

@@ -3,22 +3,19 @@ import { ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
 import { BadValuesError, NotAllowedError, NotFoundError } from "./errors";
 
-export interface PhaseDoc extends NewPhaseDoc {
+export interface ActivePhaseDoc extends BasePhaseDoc {
   deadline: Date;
 }
 
-export interface NewPhaseDoc extends ExpiredPhaseDoc {
+export interface BasePhaseDoc extends BaseDoc {
+  key: ObjectId;
   curPhase: number;
 }
 
-export interface ExpiredPhaseDoc extends BaseDoc {
-  key: ObjectId;
-}
-
 export default class PhaseConcept {
-  private readonly store = new DocCollection<NewPhaseDoc>("store phases");
-  public readonly active = new DocCollection<PhaseDoc>("active phases");
-  public readonly expired = new DocCollection<ExpiredPhaseDoc>("expired phases");
+  private readonly store = new DocCollection<BasePhaseDoc>("store phases");
+  public readonly active = new DocCollection<ActivePhaseDoc>("active phases");
+  public readonly expired = new DocCollection<BasePhaseDoc>("expired phases");
   private maxPhase = 4;
   private deadlineExtension = 24;
   public numPromptsPerDay = 2;
@@ -167,30 +164,25 @@ export default class PhaseConcept {
     const reviewDone = [];
 
     for (const phase of expired) {
-      if (phase.curPhase + 1 === this.maxPhase) {
-        await this.expired.createOne({ key: phase.key });
+      const newDate: Date = phase.deadline;
+      let newPhase = phase.curPhase;
+
+      while (newDate < now && newPhase < this.maxPhase) {
+        newDate.setTime(newDate.getTime() + this.deadlineExtension * 60 * 60 * 1000);
+        newPhase += 1;
+      }
+
+      // for synchronization purposes
+      if (newPhase > 2) {
+        reviewDone.push(phase.key);
+      }
+
+      // deciding the fate of the phase object
+      if (newDate < now) {
+        await this.expired.createOne({ key: phase.key, curPhase: newPhase });
         await this.active.deleteOne({ _id: phase._id });
       } else {
-        const newDate: Date = phase.deadline;
-        let newPhase = phase.curPhase;
-
-        while (newDate < now && newPhase < this.maxPhase) {
-          newDate.setTime(newDate.getTime() + this.deadlineExtension * 60 * 60 * 1000);
-          newPhase += 1;
-        }
-
-        // for synchronization purposes
-        if (newPhase > 2) {
-          reviewDone.push(phase);
-        }
-
-        // deciding the fate of the phase object
-        if (newDate < now) {
-          await this.expired.createOne({ key: phase.key });
-          await this.active.deleteOne({ _id: phase._id });
-        } else {
-          await this.active.updateOne({ _id: phase._id }, { deadline: newDate, curPhase: newPhase });
-        }
+        await this.active.updateOne({ _id: phase._id }, { deadline: newDate, curPhase: newPhase });
       }
     }
     await this.start();
