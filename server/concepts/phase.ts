@@ -18,6 +18,7 @@ export default class PhaseConcept {
   public readonly expired = new DocCollection<PhaseDoc>("expired phases");
   private maxPhase = 3;
   private deadlineExtension = 24;
+  public numPromptsPerDay = 2;
 
   /**
    * Creates a new store phase for a given item
@@ -95,6 +96,19 @@ export default class PhaseConcept {
   }
 
   /**
+   * Change the value of numPromptsPerDay
+   * @param newMax a positive integer
+   * @throws BadValuesError if numPromptsPerDay is 0 or less or isn't an integer
+   */
+  changeNumPromptsPerDay(newVal: number) {
+    if (newVal > 0 && Number.isInteger(newVal)) {
+      this.numPromptsPerDay = newVal;
+      return { msg: "Successfully updated number of prompts per day value" };
+    }
+    throw new BadValuesError(newVal + " must be an integer greater than 0");
+  }
+
+  /**
    * Change the max phase
    * @param newMax a positive integer
    * @throws BadValuesError if newMax is 0 or less or isn't an integer
@@ -126,8 +140,8 @@ export default class PhaseConcept {
    */
   private async start() {
     const existingPhase1s = await this.active.readMany({ curPhase: 1 });
-    if (existingPhase1s.length < 2) {
-      const phase1 = await this.store.readMany({}, { limit: 2 });
+    if (existingPhase1s.length < this.numPromptsPerDay) {
+      const phase1 = await this.store.readMany({}, { limit: this.numPromptsPerDay });
 
       const deadline = new Date();
       deadline.setTime(deadline.getTime() + this.deadlineExtension * 60 * 60 * 1000);

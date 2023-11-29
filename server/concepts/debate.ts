@@ -31,7 +31,6 @@ export default class DebateConcept {
   public readonly opinions = new DocCollection<OpinionDoc>("opinions");
   public readonly differentOpinionMatches = new DocCollection<DifferentOpinionMatchDoc>("opinion matches");
   public readonly prompts = new DocCollection<PromptDoc>("prompts");
-  public readonly numPromptsPerDay = 2;
 
   async getDebates() {
     return await this.debates.readMany({});
