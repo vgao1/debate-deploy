@@ -5,15 +5,18 @@ import WriteOpinionButton from './WriteOpinionButton.vue';
 import ViewOpinionsButton from './ViewOpinionsButton.vue';
 import router from "@/router";
 
-const props = defineProps({
-  id: {
-    type: String,
-    required: true
-  }
-})
+// const props = defineProps({
+//   id: {
+//     type: String,
+//     required: true
+//   }
+// })
+// const debateId = props.id
+// const debate = debatesData[debateId]
+const props = defineProps(["debate"])
+const debate = props.debate
+const debateId = debate._id
 
-const debateId = props.id
-const debate = debatesData[debateId]
 
 function openDebate() {
     void router.push({ 

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import router from '../router';
+import { fetchy } from "@/utils/fetchy";
+import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { onMounted } from 'vue';
+import router from '../router';
 import OpinionSlider from './OpinionSlider.vue';
 
 const route = useRoute()
@@ -24,7 +24,7 @@ const opinionText = ref('');
 //   return colors[index];
 // });
 
-function submitOpinion() {
+async function submitOpinion() {
   console.log('submitting opinion');
   const opinion = {
     content: opinionText.value,
@@ -32,10 +32,21 @@ function submitOpinion() {
   }
   console.log(opinion);
 
-  const opinionJson = JSON.stringify(opinion);
-
+  //   const opinionJson = JSON.stringify(opinion);
   // Save to local storage
-  localStorage.setItem('userOpinion', opinionJson);
+//   localStorage.setItem('userOpinion', opinionJson);
+
+  try {
+    await fetchy("/api/debate/submitOpinion", "POST", {
+      body: { 
+        debate: debateId, 
+        content: opinionText.value, 
+        likertScale: sliderValue.value 
+     }
+    });
+  } catch (_) {
+    return;
+  }
 
   router.push({
     path: "/"
@@ -60,13 +71,14 @@ function editOpinion() {
 
 onMounted(() => {
   // Retrieve opinion from local storage
-  const opinionJson = localStorage.getItem('userOpinion');
-  if (opinionJson) {
-    isEditing.value = true;
-    const opinion = JSON.parse(opinionJson);
-    opinionText.value = opinion.content;
-    sliderValue.value = opinion.agree;
-  }
+//   const opinionJson = localStorage.getItem('userOpinion');
+//   if (opinionJson) {
+//     isEditing.value = true;
+//     const opinion = JSON.parse(opinionJson);
+//     opinionText.value = opinion.content;
+//     sliderValue.value = opinion.agree;
+//   }
+
 })
 </script>
 
@@ -79,7 +91,6 @@ onMounted(() => {
     :style="{ '--range-shdw': sliderColor }" 
     /> -->
     <OpinionSlider v-model="sliderValue"/>
-    {{ sliderValue }}
 
     <div class="w-full flex justify-between text-sm px-2">
       <span>Disagree</span>
