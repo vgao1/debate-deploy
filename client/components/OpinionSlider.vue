@@ -8,7 +8,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 
 
-const sliderValue = ref(props.modelValue);
+const sliderValue = ref(props.modelValue || 50);
 
 
 // Function to interpolate between two values

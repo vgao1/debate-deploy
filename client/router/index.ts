@@ -7,6 +7,7 @@ import LoginView from "../views/LoginView.vue";
 import NotFoundView from "../views/NotFoundView.vue";
 import SettingView from "../views/SettingView.vue";
 import DebateView from "../views/DebateView.vue";
+import ReviewView from "../views/ReviewView.vue";
 import OpinionsView from "../views/OpinionsView.vue";
 import TestingView from "../views/TestingView.vue";
 
@@ -29,9 +30,14 @@ const router = createRouter({
       component: DebateView,
     },
     {
-        path: "/debates/:id/opinions",
-        name: "Opinions",
-        component: OpinionsView,
+      path: "/debates/:id/opinions",
+      name: "Opinions",
+      component: OpinionsView,
+    },
+    {
+      path: "/reviews/",
+      name: "Review",
+      component: ReviewView,
     },
     {
       path: "/setting",
