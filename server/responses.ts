@@ -51,7 +51,7 @@ export default class Responses {
   static async phases(phases: PhaseDoc[]) {
     // const debates = await Promise.all(phases.map(async (phase) => await Debate.getDebateById(phase.key)));
     const debates = [{ prompt: "temp DELETE ME" }];
-    return phases.map((phase, i) => ({ ...phase, key: debates.prompt, curPhase: PHASES[phase.curPhase - 1] }));
+    return phases.map((phase, i) => ({ ...phase, key: debates[0].prompt, curPhase: PHASES[phase.curPhase - 1] }));
   }
 }
 
