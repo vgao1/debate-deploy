@@ -89,6 +89,48 @@ const operations = [
     method: "PATCH",
     fields: { newVal: ["input", "number"] },
   },
+  {
+    name: "Suggest Prompt",
+    endpoint: "/api/debate/newPrompt",
+    method: "POST",
+    fields: { prompt: ["input", "text"], category: ["input", "text"] },
+  },
+  {
+    name: "Initialize Debate",
+    endpoint: "/api/debate/newDebate",
+    method: "POST",
+    fields: { prompt: ["input", "text"], category: ["input", "text"] },
+  },
+  {
+    name: "Submit Opinion",
+    endpoint: "/api/debate/submitOpinion",
+    method: "POST",
+    fields: { debate: ["input", "text"], content: ["input", "text"], likertScale: ["input", "text"] },
+  },
+  {
+    name: "Get Participants",
+    endpoint: "/api/debate/participants",
+    method: "GET",
+    fields: { debate: ["input", "text"] },
+  },
+  {
+    name: "Match Participant to Different Opinions",
+    endpoint: "/api/debate/matchOpinions",
+    method: "GET",
+    fields: { debate: ["input", "text"] },
+  },
+  {
+    name: "Remove Matched Opinion",
+    endpoint: "/api/debate/removeMatchedOpinion",
+    method: "POST",
+    fields: { debate: ["input", "text"], opinionId: ["input", "text"] },
+  },
+  {
+    name: "Get All Debates",
+    endpoint: "/api/debate/getDebates",
+    method: "GET",
+    fields: {},
+  },
 ];
 
 async function submitEventHandler(e: Event) {

@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 
 import { Router, getExpressRouter } from "./framework/router";
 
-import { Phase, Post, User, WebSession } from "./app";
+import { Debate, Phase, Post, User, WebSession } from "./app";
 import { PostDoc, PostOptions } from "./concepts/post";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
@@ -137,6 +137,47 @@ class Routes {
   @Router.delete("/phase/expired/:key")
   async deleteExpired(key: ObjectId) {
     return await Phase.deleteExpired(new ObjectId(key));
+  }
+
+  ////////////////////////// DEBATE //////////////////////////
+
+  @Router.post("/debate/newPrompt")
+  async suggestPrompt(prompt: string, category: string) {
+    const response = await Debate.suggestPrompt(prompt, category);
+    return { msg: response.msg, prompt: response.promptObj };
+  }
+
+  @Router.post("/debate/newDebate")
+  async initializeDebate(prompt: string, category: string) {
+    const response = await Debate.initialize(prompt, category);
+    return { msg: response.msg, debate: response.debate };
+  }
+
+  @Router.post("/debate/submitOpinion")
+  async submitOpinion(session: WebSessionDoc, debate: ObjectId, content: string, likertScale: string) {
+    const user = WebSession.getUser(session);
+    return await Debate.addOpinion(debate, user.toString(), content, likertScale);
+  }
+
+  @Router.get("/debate/participants")
+  async getParticipants(debate: ObjectId) {
+    return await Debate.getParticipants(debate);
+  }
+
+  @Router.get("/debate/matchOpinions")
+  async matchParticipantToDifferentOpinions(debate: ObjectId) {
+    return await Debate.matchParticipantToDifferentOpinions(debate);
+  }
+
+  @Router.post("/debate/removeMatchedOpinion")
+  async removeMatchedOpinion(session: WebSessionDoc, debate: ObjectId, opinionId: string) {
+    const user = WebSession.getUser(session);
+    return await Debate.removeDifferentOpinion(debate, user.toString(), opinionId);
+  }
+
+  @Router.get("/debate/getDebates")
+  async getDebates() {
+    return await Debate.getDebates();
   }
 }
 
