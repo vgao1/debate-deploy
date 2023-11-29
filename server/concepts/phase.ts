@@ -7,16 +7,19 @@ export interface PhaseDoc extends NewPhaseDoc {
   deadline: Date;
 }
 
-export interface NewPhaseDoc extends BaseDoc {
-  key: ObjectId;
+export interface NewPhaseDoc extends ExpiredPhaseDoc {
   curPhase: number;
+}
+
+export interface ExpiredPhaseDoc extends BaseDoc {
+  key: ObjectId;
 }
 
 export default class PhaseConcept {
   private readonly store = new DocCollection<NewPhaseDoc>("store phases");
   public readonly active = new DocCollection<PhaseDoc>("active phases");
-  public readonly expired = new DocCollection<PhaseDoc>("expired phases");
-  private maxPhase = 3;
+  public readonly expired = new DocCollection<ExpiredPhaseDoc>("expired phases");
+  private maxPhase = 4;
   private deadlineExtension = 24;
   public numPromptsPerDay = 2;
 
@@ -62,6 +65,16 @@ export default class PhaseConcept {
   }
 
   /**
+   * Gets an phase object by the key of the item in the phase (if expired and exists)
+   * @param key id of the item that's currently in an expired phase
+   * @returns phase object if found
+   */
+  async getExpiredByKey(key: ObjectId) {
+    await this.expireOld();
+    return await this.doesntExist(key);
+  }
+
+  /**
    * Edits the deadline for a given item if the new deadline
    * hasn't passed yet
    * @param key id of the item
@@ -75,29 +88,20 @@ export default class PhaseConcept {
   }
 
   /**
-   * Removes the active phase by key (could be =0 or =1)
+   * Removes an object with the given key
    * @param key id of the item being deleted
    * @returns an object containing a success message
    */
-  async deleteActive(key: ObjectId) {
-    await this.expireOld();
+  async delete(key: ObjectId) {
+    await this.store.deleteOne({ key });
     await this.active.deleteOne({ key });
-    return { msg: "Active phase deleted successfully!" };
-  }
-
-  /**
-   * Removes the expired phases by key (could be >=0)
-   * @param key id of the item being deleted
-   * @returns an object containing a success message
-   */
-  async deleteExpired(key: ObjectId) {
-    await this.expired.deleteMany({ key });
-    return { msg: "Expired phases deleted successfully!" };
+    await this.expired.deleteOne({ key });
+    return { msg: "Phase deleted successfully!" };
   }
 
   /**
    * Change the value of numPromptsPerDay
-   * @param newMax a positive integer
+   * @param newVal a positive integer
    * @throws BadValuesError if numPromptsPerDay is 0 or less or isn't an integer
    */
   changeNumPromptsPerDay(newVal: number) {
@@ -155,14 +159,16 @@ export default class PhaseConcept {
   /**
    * Moves all expired phases that are currently in active into expired
    * if maxed out on the phase or progresses the phase and deadline
+   * @returns all the items that are past the review stage (phase 2)
    */
-  private async expireOld() {
+  public async expireOld() {
     const now = new Date();
     const expired = await this.active.readMany({ deadline: { $lt: now } });
+    const reviewDone = [];
 
     for (const phase of expired) {
-      if (phase.curPhase === this.maxPhase) {
-        await this.expired.createOne({ key: phase.key, deadline: phase.deadline });
+      if (phase.curPhase + 1 === this.maxPhase) {
+        await this.expired.createOne({ key: phase.key });
         await this.active.deleteOne({ _id: phase._id });
       } else {
         const newDate: Date = phase.deadline;
@@ -173,8 +179,14 @@ export default class PhaseConcept {
           newPhase += 1;
         }
 
+        // for synchronization purposes
+        if (newPhase > 2) {
+          reviewDone.push(phase);
+        }
+
+        // deciding the fate of the phase object
         if (newDate < now) {
-          await this.expired.createOne({ key: phase.key, deadline: phase.deadline });
+          await this.expired.createOne({ key: phase.key });
           await this.active.deleteOne({ _id: phase._id });
         } else {
           await this.active.updateOne({ _id: phase._id }, { deadline: newDate, curPhase: newPhase });
@@ -182,6 +194,7 @@ export default class PhaseConcept {
       }
     }
     await this.start();
+    return reviewDone;
   }
 
   /**

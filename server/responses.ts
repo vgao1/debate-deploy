@@ -1,4 +1,4 @@
-import { User } from "./app";
+import { Debate, User } from "./app";
 import { KeyExistsError, NoPhaseError, PhaseDoc } from "./concepts/phase";
 import { PostAuthorNotMatchError, PostDoc } from "./concepts/post";
 import { Router } from "./framework/router";
@@ -7,7 +7,6 @@ const PHASES = ["Start", "Review", "Completed"];
 
 /**
  * This class does useful conversions for the frontend.
- * For example, it converts a {@link PostDoc} into a more readable format for the frontend.
  */
 export default class Responses {
   /**
@@ -39,8 +38,7 @@ export default class Responses {
     if (!phase) {
       return phase;
     }
-    // const debate = await Debate.getDebateById(phase.key);
-    const debate = { prompt: "temp DELETE ME" };
+    const debate = await Debate.getDebateById(phase.key);
     const curPhase = PHASES[phase.curPhase - 1];
     return { ...phase, key: debate.prompt, curPhase };
   }
@@ -49,9 +47,8 @@ export default class Responses {
    * Same as {@link phase} but for an array of PhaseDoc for improved performance.
    */
   static async phases(phases: PhaseDoc[]) {
-    // const debates = await Promise.all(phases.map(async (phase) => await Debate.getDebateById(phase.key)));
-    const debates = [{ prompt: "temp DELETE ME" }];
-    return phases.map((phase, i) => ({ ...phase, key: debates[0].prompt, curPhase: PHASES[phase.curPhase - 1] }));
+    const debates = await Promise.all(phases.map(async (phase) => await Debate.getDebateById(phase.key)));
+    return phases.map((phase, i) => ({ ...phase, key: debates[i].prompt, curPhase: PHASES[phase.curPhase - 1] }));
   }
 }
 

@@ -21,28 +21,13 @@ export interface DifferentOpinionMatchDoc extends BaseDoc {
   debate: ObjectId;
 }
 
-export interface PromptDoc extends BaseDoc {
-  prompt: string;
-  category: string;
-}
-
 export default class DebateConcept {
   public readonly debates = new DocCollection<DebateDoc>("debates");
   public readonly opinions = new DocCollection<OpinionDoc>("opinions");
   public readonly differentOpinionMatches = new DocCollection<DifferentOpinionMatchDoc>("opinion matches");
-  public readonly prompts = new DocCollection<PromptDoc>("prompts");
 
-  async getDebates() {
-    return await this.debates.readMany({});
-  }
-
-  async suggestPrompt(prompt: string, category: string) {
-    const existingPrompt = await this.prompts.readOne({ prompt });
-    if (!existingPrompt) {
-      await this.prompts.createOne({ prompt, category });
-    }
-    const promptObj = await this.prompts.readOne({ prompt });
-    return { msg: "Thanks for the suggestion!", promptObj };
+  async getDebateById(_id: ObjectId) {
+    return await this.getDebate(_id);
   }
 
   /**
@@ -51,10 +36,10 @@ export default class DebateConcept {
    * @param category a broad topic that the debate's prompt falls under
    * @returns an object containing a success message and the debate object
    */
-  async initialize(prompt: string, category: string) {
+  async suggestPrompt(prompt: string, category: string) {
     await this.promptAlreadyUsed(prompt);
     const _id = await this.debates.createOne({ prompt, category, participants: [], opinions: [] });
-    return { msg: "Debate for prompt successfully created!", debate: await this.debates.readOne({ _id }) };
+    return { msg: "Thanks for the suggestion!", _id: _id };
   }
 
   /**
@@ -188,6 +173,21 @@ export default class DebateConcept {
     } else {
       throw new NotFoundError("");
     }
+  }
+
+  /**
+   * Removes an object with the given key
+   * @param key id of the item being deleted
+   * @returns an object containing a success message
+   */
+  async delete(_id: ObjectId) {
+    const debate = await this.getDebate(_id);
+    for (const op_id of debate.opinions) {
+      await this.opinions.deleteOne({ _id: new ObjectId(op_id) });
+    }
+    await this.debates.deleteOne({ _id });
+    await this.differentOpinionMatches.deleteMany({ debate: _id });
+    return { msg: "Debate and related deleted successfully!" };
   }
 }
 

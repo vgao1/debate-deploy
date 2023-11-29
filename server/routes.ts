@@ -98,25 +98,39 @@ class Routes {
 
   ////////////////////////// PHASES //////////////////////////
 
-  @Router.get("/phase")
-  async getActivePhases() {
+  @Router.get("/activeDebates")
+  async getActiveDebates() {
+    const completed = await Phase.expireOld();
     return await Responses.phases(await Phase.getActive());
   }
 
-  @Router.get("/phase/:key")
-  async getPhaseByKey(key: ObjectId) {
-    return await Responses.phase(await Phase.getPhaseByKey(new ObjectId(key)));
+  @Router.get("/activeDebates/:debateID")
+  async getActiveDebateById(debateID: ObjectId) {
+    const completed = await Phase.expireOld();
+    return await Responses.phase(await Phase.getPhaseByKey(new ObjectId(debateID)));
   }
 
-  @Router.post("/phase")
-  async addStoredPhase(key: ObjectId) {
-    // TO-DO Synchronize with debate creation
-    return await Phase.initialize(new ObjectId(key));
+  @Router.get("/historyDebates")
+  async getExpiredDebates() {
+    const completed = await Phase.expireOld();
+    return await Responses.phases(await Phase.getHistory());
   }
 
-  @Router.patch("/phase")
-  async editPhaseDeadline(key: ObjectId, newDeadline: Date) {
-    return await Phase.editDeadline(new ObjectId(key), new Date(newDeadline));
+  @Router.get("/historyDebates/:debateID")
+  async getExpiredDebateById(debateID: ObjectId) {
+    const completed = await Phase.expireOld();
+    return await Responses.phase(await Phase.getExpiredByKey(new ObjectId(debateID)));
+  }
+
+  @Router.patch("/activeDebates/deadline")
+  async editActiveDebateDeadline(debateID: ObjectId, newDeadline: Date) {
+    const completed = await Phase.expireOld();
+    return await Phase.editDeadline(new ObjectId(debateID), new Date(newDeadline));
+  }
+
+  @Router.patch("/phase/numPrompts")
+  changeNumPromptsPerDay(newVal: number) {
+    return Phase.changeNumPromptsPerDay(newVal);
   }
 
   @Router.patch("/phase/extension")
@@ -129,55 +143,43 @@ class Routes {
     return Phase.changeMaxPhase(newMax);
   }
 
-  @Router.delete("/phase/active/:key")
-  async deleteActive(key: ObjectId) {
-    return await Phase.deleteActive(new ObjectId(key));
-  }
-
-  @Router.delete("/phase/expired/:key")
-  async deleteExpired(key: ObjectId) {
-    return await Phase.deleteExpired(new ObjectId(key));
-  }
-
   ////////////////////////// DEBATE //////////////////////////
 
   @Router.post("/debate/newPrompt")
   async suggestPrompt(prompt: string, category: string) {
+    const completed = await Phase.expireOld();
     const response = await Debate.suggestPrompt(prompt, category);
-    return { msg: response.msg, prompt: response.promptObj };
+    await Phase.initialize(response._id);
+    return { msg: response.msg };
   }
 
-  @Router.post("/debate/newDebate")
-  async initializeDebate(prompt: string, category: string) {
-    const response = await Debate.initialize(prompt, category);
-    return { msg: response.msg, debate: response.debate };
-  }
-
-  @Router.post("/debate/submitOpinion")
+  @Router.post("/activeDebates/submitOpinion")
   async submitOpinion(session: WebSessionDoc, debate: ObjectId, content: string, likertScale: string) {
     const user = WebSession.getUser(session);
+    const completed = await Phase.expireOld();
+    await Phase.getPhaseByKey(new ObjectId(debate)); // checks if debate is active
     return await Debate.addOpinion(debate, user.toString(), content, likertScale);
   }
 
-  @Router.get("/debate/participants")
-  async getParticipants(debate: ObjectId) {
-    return await Debate.getParticipants(debate);
-  }
-
-  @Router.get("/debate/matchOpinions")
+  @Router.get("/activeDebates/matchOpinions")
   async matchParticipantToDifferentOpinions(debate: ObjectId) {
+    const completed = await Phase.expireOld();
+    await Phase.getPhaseByKey(new ObjectId(debate)); // checks if debate is active
     return await Debate.matchParticipantToDifferentOpinions(debate);
   }
 
-  @Router.post("/debate/removeMatchedOpinion")
+  @Router.post("/activeDebates/removeMatchedOpinion")
   async removeMatchedOpinion(session: WebSessionDoc, debate: ObjectId, opinionId: string) {
     const user = WebSession.getUser(session);
+    const completed = await Phase.expireOld();
     return await Debate.removeDifferentOpinion(debate, user.toString(), opinionId);
   }
 
-  @Router.get("/debate/getDebates")
-  async getDebates() {
-    return await Debate.getDebates();
+  @Router.delete("/debate")
+  async deleteDebate(debateID: ObjectId) {
+    const completed = await Phase.expireOld();
+    await Phase.delete(new ObjectId(debateID));
+    return await Debate.delete(new ObjectId(debateID));
   }
 }
 
