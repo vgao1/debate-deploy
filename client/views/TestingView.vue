@@ -125,6 +125,12 @@ const operations = [
     method: "POST",
     fields: { debate: ["input", "text"], opinionId: ["input", "text"] },
   },
+  {
+    name: "Get All Debates",
+    endpoint: "/api/debate/getDebates",
+    method: "GET",
+    fields: {},
+  },
 ];
 
 async function submitEventHandler(e: Event) {

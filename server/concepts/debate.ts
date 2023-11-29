@@ -33,6 +33,10 @@ export default class DebateConcept {
   public readonly prompts = new DocCollection<PromptDoc>("prompts");
   public readonly numPromptsPerDay = 2;
 
+  async getDebates() {
+    return await this.debates.readMany({});
+  }
+
   async suggestPrompt(prompt: string, category: string) {
     const existingPrompt = await this.prompts.readOne({ prompt });
     if (!existingPrompt) {

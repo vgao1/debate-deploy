@@ -174,6 +174,11 @@ class Routes {
     const user = WebSession.getUser(session);
     return await Debate.removeDifferentOpinion(debate, user.toString(), opinionId);
   }
+
+  @Router.get("/debate/getDebates")
+  async getDebates() {
+    return await Debate.getDebates();
+  }
 }
 
 export default getExpressRouter(new Routes());
