@@ -52,6 +52,15 @@ export default class PhaseConcept {
   }
 
   /**
+   * Gets all expired phases
+   * @returns all expired phase objects (if any)
+   */
+  async getHistory() {
+    await this.expireOld();
+    return await this.expired.readMany({});
+  }
+
+  /**
    * Edits the deadline for a given item if the new deadline
    * hasn't passed yet
    * @param key id of the item
