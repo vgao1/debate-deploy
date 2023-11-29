@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import router from "@/router";
 // TODO(Nathan): retrieve debate from db based on id
 import debatesData from '@/assets/debates.json';
+import WriteOpinionButton from './WriteOpinionButton.vue';
+import ViewOpinionsButton from './ViewOpinionsButton.vue';
+import router from "@/router";
 
-
-// TODO(Nathan): add debate id?
 const props = defineProps({
   id: {
     type: String,
@@ -12,12 +12,20 @@ const props = defineProps({
   }
 })
 
-const debate = debatesData[props.id]
+const debateId = props.id
+const debate = debatesData[debateId]
 
 function openDebate() {
-  void router.push({ 
-    path: `/debates/${props.id}`,
-  });
+    void router.push({ 
+      path: `/debates/${debateId}`,
+    });
+}
+
+function openOpinions() {
+  console.log("open opinions")
+    void router.push({ 
+      path: `/debates/${debateId}/opinions`,
+    });
 }
 
 </script>
@@ -25,21 +33,25 @@ function openDebate() {
 
 <template>
   <div>  
-    <div class="border-l-2 pl-2 border-neutral-300 space-y-1">
-      <div class="flex justify-between items-center">
-        <b class="text-xs">{{ debate.category }}</b>
-        <p class="text-xs text-lime-400">Due in 6h</p>
-      </div>
-      <p class="pb-1">{{ debate.prompt }}</p>
-    </div>
-  
-    <div class="flex align-middle pt-3 space-x-1">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-      </svg>
+    <!-- <button @click="openDebate"> -->
+      <div class="border-l-2 pl-2 border-neutral-300 space-y-1">
+        <div class="flex justify-between items-center">
+          <b class="text-xs">{{ debate.category }}</b>
+          
+          <div v-if="debate.status != 'done'">
+              <p class="text-xs text-lime-400">Due in 6h</p>
+          </div>
+          <div v-else>
+            <p class="text-xs text-neutral-400">Done</p>
+          </div>
 
-      <button @click="openDebate" class="font-normal text-sm">Write your opinion...</button>
-    </div>
+        </div>
+        <p class="pb-1">{{ debate.prompt }}</p>
+      </div>
+    <!-- </button> -->
+      
+    <WriteOpinionButton v-if="debate.status != 'done'" @click="openDebate" />
+    <ViewOpinionsButton v-else @click="openOpinions"/>
   </div>
 </template>
 

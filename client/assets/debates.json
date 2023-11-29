@@ -6,5 +6,31 @@
   "debate2": {
     "category": "Restriction",
     "prompt": "One should be able to participate in debates on this app without logging in."
+  },
+"debate3": {
+    "category": "Test",
+    "prompt": "Test prompt.",
+    "status": "done",
+    "opinions": [
+        {
+            "opinion": "Test opinion 1."
+        },
+        {
+            "opinion": "Test opinion 2."
+        }
+    ]
+},
+"debate4": {
+    "category": "Test2",
+    "prompt": "Test prompt2.",
+    "status": "done",
+    "opinions": [
+        {
+            "opinion": "Test opinion 3."
+        },
+        {
+            "opinion": "Test opinion 4."
+        }
+    ]
   }
 }

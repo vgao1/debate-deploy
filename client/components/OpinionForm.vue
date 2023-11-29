@@ -1,47 +1,86 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import router from '../router';
+import { useRoute } from 'vue-router';
+import { onMounted } from 'vue';
+import OpinionSlider from './OpinionSlider.vue';
+
+const route = useRoute()
+const debateId = route.params.id
+// true if the user has already submitted an opinion
+const isEditing = ref(false);
 
 const sliderValue = ref(50);
+const opinionText = ref('');
+
 
 // const sliderColor = computed(() => {
-//   // Calculate the red and green components based on the slider value
-//   const red = Math.max(255 - sliderValue.value * 5.1, 0);
-//   const green = Math.min(sliderValue.value * 5.1, 255);
-//   return `rgb(${red}, ${green}, 0)`;
+//   // Define an array of colors in the gradient
+//   const colors = ['#e07a5f', '#de7c5d', '#d88258', '#ce8a53', '#c09453', '#b09d59', '#a0a466', '#93aa75', '#89ae84', '#84b090', '#81b297', '#81b29a'];
+//   // Calculate the index of the color based on the slider value
+//   const index = Math.floor((sliderValue.value / 100) * (colors.length - 1));
+  
+//   // Return the color at the calculated index
+//   return colors[index];
 // });
 
-const sliderColor = computed(() => {
-  // Define the start and end RGB values for dark purple and pink
-  const startColor = { r: 75, g: 0, b: 130 }; // Dark purple
-  const endColor = { r: 255, g: 192, b: 203 }; // Nice pink
+function submitOpinion() {
+  console.log('submitting opinion');
+  const opinion = {
+    content: opinionText.value,
+    agree: sliderValue.value
+  }
+  console.log(opinion);
 
-  // Calculate the difference for each color component
-  const diffColor = {
-    r: endColor.r - startColor.r,
-    g: endColor.g - startColor.g,
-    b: endColor.b - startColor.b
-  };
+  const opinionJson = JSON.stringify(opinion);
 
-  // Calculate the current color based on the slider value
-  const currentColor = {
-    r: startColor.r + diffColor.r * (sliderValue.value / 100),
-    g: startColor.g + diffColor.g * (sliderValue.value / 100),
-    b: startColor.b + diffColor.b * (sliderValue.value / 100)
-  };
+  // Save to local storage
+  localStorage.setItem('userOpinion', opinionJson);
 
-  // Return the color in RGB format
-  return `rgb(${Math.round(currentColor.r)}, ${Math.round(currentColor.g)}, ${Math.round(currentColor.b)})`;
-});
+  router.push({
+    path: "/"
+  })
+}
+
+function deleteOpinion() {
+  console.log('deleting opinion');
+  localStorage.removeItem('userOpinion');
+  router.push({
+    path: "/"
+  })
+}
+
+function editOpinion() {
+  console.log('editing opinion');
+  submitOpinion();
+  router.push({
+    path: "/"
+  })
+}
+
+onMounted(() => {
+  // Retrieve opinion from local storage
+  const opinionJson = localStorage.getItem('userOpinion');
+  if (opinionJson) {
+    isEditing.value = true;
+    const opinion = JSON.parse(opinionJson);
+    opinionText.value = opinion.content;
+    sliderValue.value = opinion.agree;
+  }
+})
 </script>
 
 <template>
   <div>
     <p class="font-bold pb-3 text-base">Your opinion</p>
     <!-- https://github.com/tailwindlabs/tailwindcss/discussions/8748 -->
-    <input type="range" min="0" max="100" v-model="sliderValue" 
+    <!-- <input type="range" min="0" max="100" v-model="sliderValue" 
     class="range range-xs custom-slider" 
-    />
-    <!-- :style="{ background: sliderColor }"  -->
+    :style="{ '--range-shdw': sliderColor }" 
+    /> -->
+    <OpinionSlider v-model="sliderValue"/>
+    {{ sliderValue }}
+
     <div class="w-full flex justify-between text-sm px-2">
       <span>Disagree</span>
       <span>Neutral</span>
@@ -53,7 +92,7 @@ const sliderColor = computed(() => {
         <span class="label-text font-bold"></span>
         <span class="label-text-alt"></span>
       </label>
-      <textarea class="textarea textarea-bordered h-24 font-base" placeholder="Develop your opinion..."></textarea>
+      <textarea v-model="opinionText" class="textarea textarea-bordered h-24 font-base" placeholder="Develop your opinion..."></textarea>
       <label class="label">
         <span class="label-text"></span>
         <span class="label-text-alt">(0/1000) words</span>
@@ -61,23 +100,13 @@ const sliderColor = computed(() => {
     </div>
 
     <div class="flex justify-center">
-      <button class="btn">Submit</button>
+      <div v-if="isEditing" class="flex justify-center space-x-2">
+        <button @click="editOpinion" class="btn">Edit</button>
+        <button @click="deleteOpinion" class="btn btn-outline btn-error">Delete</button>
+      </div>
+      <div v-else class="flex justify-center space-x-2">
+        <button @click="submitOpinion" class="btn">Submit</button>
+      </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-/* .custom-slider::-webkit-slider-thumb {
-  background-color: v-bind(sliderColor);
-}
-.custom-slider::-moz-range-thumb {
-  background-color: v-bind(sliderColor);
-}
-.custom-slider::-ms-thumb {
-  background-color: v-bind(sliderColor);
-} */
-
-
-
-
-</style>
