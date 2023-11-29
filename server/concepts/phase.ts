@@ -27,7 +27,8 @@ export default class PhaseConcept {
   async initialize(key: ObjectId) {
     await this.expireOld();
     await this.alreadyExists(key);
-    const _id = await this.active.createOne({ key, curPhase: 0 });
+    const _id = await this.store.createOne({ key, curPhase: 0 });
+    await this.start();
     return { msg: "New stored phase successfully created!", phase: await this.store.readOne({ _id }) };
   }
 
@@ -117,10 +118,10 @@ export default class PhaseConcept {
   private async start() {
     const existingPhase1s = await this.active.readMany({ curPhase: 1 });
     if (existingPhase1s.length < 2) {
+      const phase1 = await this.store.readMany({}, { limit: 2 });
+
       const deadline = new Date();
       deadline.setTime(deadline.getTime() + this.deadlineExtension * 60 * 60 * 1000);
-
-      const phase1 = await this.store.readMany({}, { limit: 2 });
       for (const item of phase1) {
         await this.active.createOne({ key: item.key, deadline, curPhase: 1 });
         await this.store.deleteOne({ _id: item._id });
