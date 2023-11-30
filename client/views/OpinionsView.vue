@@ -1,23 +1,39 @@
 <script setup lang="ts">
 import BackArrowHeader from "@/components/Nav/BackArrowHeader.vue";
-import OpinionForm from "@/components/OpinionForm.vue";
 import TextContainer from "@/components/TextContainer.vue";
-import { useRoute } from 'vue-router';
+import { useRoute } from "vue-router";
+import { fetchy } from "@/utils/fetchy";
+import { onBeforeMount, ref } from "vue";
 
-// TODO(Nathan): retrieve debate from db based on id
-import debatesData from '@/assets/debates.json';
+const route = useRoute();
+const debateId = route.params.id;
+const debate = ref<Record<string, string>>({});
+const opinions = ref<Array<Record<string, string>>>([]);
+const loaded = ref(false);
 
-const route = useRoute()
-const debateId = route.params.id
-const debate = debatesData[debateId]
+async function getOpinions() {
+  let res;
+  try {
+    res = await fetchy(`/api/historyDebates/${debateId}`, "GET", {});
+  } catch (_) {
+    console.log("error");
+    return;
+  }
 
+  opinions.value = res.opinions;
+  debate.value = res.debate;
+}
+
+onBeforeMount(async () => {
+  await getOpinions();
+  loaded.value = true;
+});
 </script>
 
 <template>
-  <div class="py-4">
-
+  <div v-if="loaded" class="py-4">
     <TextContainer>
-      <BackArrowHeader text="Debate"/>
+      <BackArrowHeader text="Debate" />
     </TextContainer>
 
     <TextContainer>
@@ -29,12 +45,11 @@ const debate = debatesData[debateId]
         <p class="pb-1 text-base">{{ debate.prompt }}</p>
       </div>
     </TextContainer>
-    
-    <div v-for="opinion in debate.opinions" class="flex flex-col">
+
+    <div v-for="opinion in opinions" :key="opinion._id" class="flex flex-col">
       <TextContainer>
-        {{  opinion.opinion }}
+        {{ opinion.content }}
       </TextContainer>
     </div>
-</div>
+  </div>
 </template>
-

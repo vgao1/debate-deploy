@@ -123,7 +123,7 @@ class Routes {
   async getExpiredDebateById(debateID: ObjectId) {
     const completed = await Phase.expireOld();
     await Debate.deleteMatchesForDebate(completed);
-    return await Responses.phase(await Phase.getExpiredByKey(new ObjectId(debateID)));
+    return await Responses.opinions(await Phase.getExpiredByKey(new ObjectId(debateID)));
   }
 
   @Router.patch("/activeDebates/deadline")

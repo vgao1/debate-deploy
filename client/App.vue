@@ -7,6 +7,7 @@ import NavBottomBar from "./components/Nav/NavBottomBar.vue";
 const userStore = useUserStore();
 const currentRoute = useRoute();
 const currentRouteName = ref();
+const iconNames = ["Home", "Login"];
 
 // Make sure to update the session before mounting the app in case the user is already logged in
 onBeforeMount(async () => {
@@ -19,7 +20,7 @@ onBeforeMount(async () => {
 
 function getRouteName() {
   if (currentRoute.name) {
-    currentRouteName.value = currentRoute.name.toString().toLowerCase();
+    currentRouteName.value = iconNames.includes(currentRoute.name.toString()) ? currentRoute.name.toString().toLowerCase() : "home";
   }
   return currentRouteName.value != undefined;
 }

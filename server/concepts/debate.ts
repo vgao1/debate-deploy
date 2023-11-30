@@ -244,6 +244,11 @@ export default class DebateConcept {
     await this.removeParticipant(debate, author);
     return { msg: "Opinion deleted successfully!" };
   }
+
+  async getAllOpinionsForDebate(debate: ObjectId) {
+    const allOpinions = this.opinions.readMany({ debate });
+    return allOpinions;
+  }
 }
 
 export class UsedPromptError extends NotAllowedError {

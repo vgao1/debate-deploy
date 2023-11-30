@@ -50,6 +50,15 @@ export default class Responses {
     const debates = await Promise.all(phases.map(async (phase) => await Debate.getDebateById(phase.key)));
     return phases.map((phase, i) => ({ ...phase, prompt: debates[i].prompt, category: debates[i].category, curPhase: PHASES[phase.curPhase] }));
   }
+
+  static async opinions(phase: ActivePhaseDoc | BasePhaseDoc | null) {
+    if (!phase) {
+      return phase;
+    }
+    const opinions = await Debate.getAllOpinionsForDebate(phase.key);
+    const debate = await Debate.getDebateById(phase.key);
+    return { opinions, debate };
+  }
 }
 
 Router.registerError(PostAuthorNotMatchError, async (e) => {
