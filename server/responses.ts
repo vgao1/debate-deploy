@@ -40,7 +40,7 @@ export default class Responses {
     }
     const debate = await Debate.getDebateById(phase.key);
     const curPhase = PHASES[phase.curPhase];
-    return { ...phase, key: debate.prompt, curPhase };
+    return { ...phase, prompt: debate.prompt, category: debate.category, curPhase };
   }
 
   /**
@@ -48,7 +48,7 @@ export default class Responses {
    */
   static async phases(phases: ActivePhaseDoc[] | BasePhaseDoc[]) {
     const debates = await Promise.all(phases.map(async (phase) => await Debate.getDebateById(phase.key)));
-    return phases.map((phase, i) => ({ ...phase, key: debates[i].prompt, curPhase: PHASES[phase.curPhase] }));
+    return phases.map((phase, i) => ({ ...phase, prompt: debates[i].prompt, category: debates[i].category, curPhase: PHASES[phase.curPhase] }));
   }
 }
 

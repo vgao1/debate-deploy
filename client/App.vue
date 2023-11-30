@@ -1,16 +1,12 @@
 <script setup lang="ts">
-import { useToastStore } from "@/stores/toast";
 import { useUserStore } from "@/stores/user";
-import { storeToRefs } from "pinia";
-import { computed, onBeforeMount } from "vue";
-import { RouterLink, RouterView, useRoute } from "vue-router";
+import { onBeforeMount, ref } from "vue";
+import { RouterView, useRoute } from "vue-router";
 import NavBottomBar from "./components/Nav/NavBottomBar.vue";
 
-const currentRoute = useRoute();
-const currentRouteName = computed(() => currentRoute.name);
 const userStore = useUserStore();
-const { isLoggedIn } = storeToRefs(userStore);
-const { toast } = storeToRefs(useToastStore());
+const currentRoute = useRoute();
+const currentRouteName = ref();
 
 // Make sure to update the session before mounting the app in case the user is already logged in
 onBeforeMount(async () => {
@@ -20,6 +16,13 @@ onBeforeMount(async () => {
     // User is not logged in
   }
 });
+
+function getRouteName() {
+  if (currentRoute.name) {
+    currentRouteName.value = currentRoute.name.toString().toLowerCase();
+  }
+  return currentRouteName.value != undefined;
+}
 </script>
 
 <template>
@@ -50,8 +53,8 @@ onBeforeMount(async () => {
 
   <!-- TODO: can't specify max width in the div instead of each child? -->
   <div class="">
-    <RouterView class="max-w-sm mx-auto"/>
-    <NavBottomBar class="max-w-sm mx-auto"/>
+    <RouterView class="max-w-sm mx-auto" />
+    <NavBottomBar v-if="getRouteName()" :activeIcon="currentRouteName" class="max-w-sm mx-auto" />
   </div>
 </template>
 

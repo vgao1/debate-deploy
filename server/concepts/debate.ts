@@ -6,13 +6,13 @@ export interface DebateDoc extends BaseDoc {
   prompt: string;
   category: string;
   participants: Array<string>;
-  opinions: Array<string>;
 }
 
 export interface OpinionDoc extends BaseDoc {
   content: string;
   author: string;
   likertScale: string;
+  debate: ObjectId;
 }
 
 export interface DifferentOpinionMatchDoc extends BaseDoc {
@@ -38,8 +38,11 @@ export default class DebateConcept {
    */
   async suggestPrompt(prompt: string, category: string) {
     await this.promptAlreadyUsed(prompt);
-    const _id = await this.debates.createOne({ prompt, category, participants: [], opinions: [] });
-    return { msg: "Thanks for the suggestion!", _id: _id };
+    await this.debates.createOne({ prompt, category, participants: [] });
+    const debateObj = await this.debates.readOne({ prompt, category });
+    if (debateObj) {
+      return { msg: "Thanks for the suggestion!", debateId: debateObj._id };
+    }
   }
 
   /**
@@ -52,15 +55,12 @@ export default class DebateConcept {
    */
   async addOpinion(_id: ObjectId, user: string, content: string, likertScale: string) {
     const existingDebate = await this.getDebate(_id);
-    const allOpinions = existingDebate.opinions;
     if (!(await this.isParticipant(_id, user))) {
       const allParticipants = existingDebate.participants;
       allParticipants.push(user);
-      const newOpinion = await this.opinions.createOne({ content, author: user, likertScale });
-      allOpinions.push(newOpinion.toString());
-      await this.debates.updateOne({ _id }, { participants: allParticipants, opinions: allOpinions });
+      await this.opinions.createOne({ content, author: user, likertScale, debate: _id });
     } else {
-      await this.opinions.updateOne({ author: user }, { content });
+      await this.opinions.updateOne({ author: user }, { content, likertScale });
     }
     return { msg: "Successfully added opinion!" };
   }
@@ -73,8 +73,6 @@ export default class DebateConcept {
    */
   async isParticipant(_id: ObjectId, user: string) {
     const existingDebate = await this.getDebate(_id);
-    console.log("check debate participants");
-    console.log(existingDebate.participants.includes(user));
     return existingDebate.participants.includes(user);
   }
 
@@ -96,11 +94,11 @@ export default class DebateConcept {
    * opinions they are matched to
    */
   async matchParticipantToDifferentOpinions(_id: ObjectId) {
-    const existingDebate = await this.getDebate(_id);
-    for (const opinion of existingDebate.opinions) {
-      for (const otherOpinion of existingDebate.opinions) {
-        const opinionObj = await this.opinions.readOne({ _id: new ObjectId(opinion) });
-        const otherOpinionObj = await this.opinions.readOne({ _id: new ObjectId(otherOpinion) });
+    const allOpinions = await this.opinions.readMany({ debate: _id });
+    for (const opinion of allOpinions) {
+      for (const otherOpinion of allOpinions) {
+        const opinionObj = await this.opinions.readOne({ _id: opinion._id });
+        const otherOpinionObj = await this.opinions.readOne({ _id: otherOpinion._id });
         if (!opinionObj || !otherOpinionObj) {
           throw new NotFoundError("");
         } else {
@@ -108,15 +106,13 @@ export default class DebateConcept {
             const opinionObjAuthor = opinionObj.author;
             const participantMatchedOpinions = await this.differentOpinionMatches.readOne({ reviewer: opinionObjAuthor, debate: _id });
             if (participantMatchedOpinions) {
-              console.log("found matched opinions");
-              if (!participantMatchedOpinions.matchedDifferentOpinions.includes(otherOpinion)) {
+              if (!participantMatchedOpinions.matchedDifferentOpinions.includes(otherOpinion._id.toString())) {
                 const matchedOpinions = participantMatchedOpinions.matchedDifferentOpinions;
-                matchedOpinions.push(otherOpinion);
+                matchedOpinions.push(otherOpinion._id.toString());
                 await this.differentOpinionMatches.updateOne({ reviewer: opinionObjAuthor, debate: _id }, { matchedDifferentOpinions: matchedOpinions });
               }
             } else {
-              console.log("initialize new matched opinions");
-              await this.differentOpinionMatches.createOne({ reviewer: opinionObjAuthor, debate: _id, matchedDifferentOpinions: [otherOpinion] });
+              await this.differentOpinionMatches.createOne({ reviewer: opinionObjAuthor, debate: _id, matchedDifferentOpinions: [otherOpinion._id.toString()] });
             }
           }
         }
@@ -149,11 +145,51 @@ export default class DebateConcept {
     return { msg: "Successfully removed opinion that was matched to you!" };
   }
 
+  /**
+   * Deletes info about which the set of different opinions matched to each participant
+   * @param debateIDs ObjectIds of debates
+   * @returns an object containing a success message
+   */
   async deleteMatchesForDebate(debateIDs: ObjectId[]) {
     for (const debate of debateIDs) {
       await this.differentOpinionMatches.deleteMany({ debate });
     }
     return { msg: "Successfully removed all opinion matches for the given debates!" };
+  }
+
+  /**
+   * Gets an opinion object given the debate and author of opinion.
+   * @param debate the ObjectId of debate
+   * @returns an object with previously submitted written opinion (or empty string
+   * if the user hasn't added an opinion to debate yet), likertScale value (of previous submission
+   * or default value of 50), and text of button to render.
+   */
+  async getOpinionForDebateByAuthor(debate: ObjectId, author: string) {
+    const existingOpinion = await this.opinions.readOne({ author, debate });
+    if (existingOpinion) {
+      return { content: existingOpinion.content, likertScale: existingOpinion.likertScale, buttonText: "Update" };
+    } else {
+      return { content: "", likertScale: 50, buttonText: "Submit" };
+    }
+  }
+
+  /**
+   * Removes a participant from a debate
+   * @param _id the ObjectId of debate
+   * @param user the string representation of ObjectId of user to remove from a debate
+   * @returns a message stating that opinion matched to reviewer was successfully removed or throws an error
+   */
+  async removeParticipant(_id: ObjectId, user: string) {
+    const existingDebate = await this.getDebate(_id);
+    const allParticipants = existingDebate.participants;
+    const participantIndex = allParticipants.indexOf(user);
+    if (participantIndex != -1) {
+      allParticipants.splice(participantIndex, 1);
+      await this.debates.updateOne({ _id }, { participants: allParticipants });
+      return { msg: "Successfully removed participant!" };
+    } else {
+      throw new NotFoundError("User was not a participant of given debate");
+    }
   }
 
   /**
@@ -183,18 +219,30 @@ export default class DebateConcept {
   }
 
   /**
-   * Removes an object with the given key
-   * @param key id of the item being deleted
+   * Removes debate and all opinions associated with debate
+   * @param _id the objectId of debate
    * @returns an object containing a success message
    */
   async delete(_id: ObjectId) {
-    const debate = await this.getDebate(_id);
-    for (const op_id of debate.opinions) {
-      await this.opinions.deleteOne({ _id: new ObjectId(op_id) });
+    const allOpinions = await this.opinions.readMany({ debate: _id });
+    for (const opinion of allOpinions) {
+      await this.opinions.deleteOne({ _id: new ObjectId(opinion._id) });
     }
     await this.debates.deleteOne({ _id });
     await this.differentOpinionMatches.deleteMany({ debate: _id });
     return { msg: "Debate and related deleted successfully!" };
+  }
+
+  /**
+   * Removes one opinion associated with a debate
+   * @param debate the objectId of debate
+   * @param author the string representation of an objectId of a user
+   * @returns an object containing a success message
+   */
+  async deleteOneOpinion(debate: ObjectId, author: string) {
+    await this.opinions.deleteOne({ debate, author });
+    await this.removeParticipant(debate, author);
+    return { msg: "Opinion deleted successfully!" };
   }
 }
 

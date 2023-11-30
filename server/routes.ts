@@ -155,8 +155,10 @@ class Routes {
     const completed = await Phase.expireOld();
     await Debate.deleteMatchesForDebate(completed);
     const response = await Debate.suggestPrompt(prompt, category);
-    await Phase.initialize(response._id);
-    return { msg: response.msg };
+    if (response) {
+      await Phase.initialize(response.debateId);
+      return { msg: response.msg };
+    }
   }
 
   @Router.post("/activeDebates/submitOpinion")
@@ -182,6 +184,18 @@ class Routes {
     const completed = await Phase.expireOld();
     await Debate.deleteMatchesForDebate(completed);
     return await Debate.removeDifferentOpinion(debate, user.toString(), opinionId);
+  }
+
+  @Router.get("/activeDebates/getMyOpinion/:debateID")
+  async getMyOpinionForDebate(session: WebSessionDoc, debateID: ObjectId) {
+    const user = WebSession.getUser(session);
+    return await Debate.getOpinionForDebateByAuthor(debateID, user.toString());
+  }
+
+  @Router.delete("/activeDebates/deleteMyOpinion/:debateID")
+  async deleteMyOpinionForDebate(session: WebSessionDoc, debateID: ObjectId) {
+    const user = WebSession.getUser(session);
+    return await Debate.deleteOneOpinion(debateID, user.toString());
   }
 
   @Router.delete("/debate")
